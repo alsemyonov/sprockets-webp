@@ -3,13 +3,19 @@
 [![unstable](https://rawgithub.com/hughsk/stability-badges/master/dist/unstable.svg)](http://github.com/hughsk/stability-badges)
 
 [![Gem Version](https://badge.fury.io/rb/sprockets-webp.png)](http://badge.fury.io/rb/sprockets-webp)
-[![Code Climate](https://codeclimate.com/github/kavu/sprockets-webp.png)](https://codeclimate.com/github/kavu/sprockets-webp)
-[![Dependency Status](https://gemnasium.com/kavu/sprockets-webp.png)](https://gemnasium.com/kavu/sprockets-webp)
-[![Still Maintained](http://stillmaintained.com/kavu/sprockets-webp.png)](http://stillmaintained.com/kavu/sprockets-webp)
+[![Code Climate](https://codeclimate.com/github/alsemyonov/sprockets-webp-exporter.png)](https://codeclimate.com/github/alsemyonov/sprockets-webp-exporter)
+[![Dependency Status](https://gemnasium.com/alsemyonov/sprockets-webp-exporter.png)](https://gemnasium.com/alsemyonov/sprockets-webp-exporter)
+[![Still Maintained](http://stillmaintained.com/alsemyonov/sprockets-webp-exporter.png)](http://stillmaintained.com/alsemyonov/sprockets-webp-exporter)
 
-[![Coderwall](https://api.coderwall.com/kavu/endorsecount.png)](https://coderwall.com/kavu)
+[![Coderwall](https://api.coderwall.com/alsemyonov/endorsecount.png)](https://coderwall.com/alsemyonov)
 
-This gem provides a Rails Asset Pipeline hook for converting PNG and JPEG assets to the WebP format.
+**Warning**: This gem depends on Sprockets 4 (that is in beta right now), because of using new `#register_exporter`.
+There is no guarantee for stable API until `sprockets-4.0.0` and `sprockets-webp-exporter-1.0.0` released.
+
+_Big thanks to [Max Riveiro](https://github.com/kavu) for his [sprockets-webp](https://github.com/kavu/sprockets-webp) 
+gem that worked with previous versions of Sprockets, but is not working now. I hope we could merge our gems in future._
+
+This gem provides a WebP Exporter for converting PNG and JPEG assets to the WebP format using Sprockets 4.
 
 ## Requirements
 
@@ -17,26 +23,14 @@ The main requirement is obviously [libwebp](https://developers.google.com/speed/
 
 ## Installation
 
-### Rails 4
+### Rails 5
 
-If you're using Rails 4 you need to add gem to the ```:production``` group in to your application's Gemfile:
+If you're using Rails 5 you need to add gem to the ```:production``` group in to your application's Gemfile:
 
 ```ruby
 group :production do
   # ...
-  gem 'sprockets-webp'
-  # ...
-end
-```
-
-### Rails 3
-
-Minimal required version of Rails 3 is ```3.2.9```, because of Sprockets ```~> 2.2``` dependency requirement. Simply add sprockets-web to the ```:assets``` group:
-
-```ruby
-group :assets do
-  # ...
-  gem 'sprockets-webp'
+  gem 'sprockets-webp-exporter'
   # ...
 end
 ```
@@ -45,7 +39,9 @@ end
 
 You can configure encode options for webp by using `encode_options` (in example default options):
 
-    Sprockets::WebP.encode_options = { quality: 100, lossless: 1, method: 6, alpha_filtering: 2, alpha_compression: 0, alpha_quality: 100 }
+```ruby
+Sprockets::WebP.encode_options = { quality: 100, lossless: 1, method: 6, alpha_filtering: 2, alpha_compression: 0, alpha_quality: 100 }
+```
 
 More options you can find in [web-ffi readme](https://github.com/le0pard/webp-ffi#encode-webp-image).
 
@@ -53,67 +49,8 @@ More options you can find in [web-ffi readme](https://github.com/le0pard/webp-ff
 
 Drop some PNGs and JPGs into ```app/assets/images``` and you can test converter locally with the Rake task:
 
-    $ bundle exec rake assets:precompile RAILS_ENV=production
-
-
-## Capistrano
-
-If you deploy your rails app by capistrano gem, you should update mtime for your webp images, because it will not present in manifest.json and will be cleanup automatically. To solve this problem you can use following capistrano task.
-
-### Capistrano 3
-
-```ruby
-namespace :deploy do
-  namespace :assets do
-    namespace :webp do
-
-      desc 'Updates mtime for webp images'
-      task :touch => [:set_rails_env] do
-        on roles(:web) do
-          execute <<-CMD.gsub(/[\r\n\t]?/, '').squeeze(' ').strip
-          cd #{release_path.join('public/assets')};
-          for asset in $(
-            find . -regex ".*\.webp$" -type f | LC_COLLATE=C sort
-          ); do
-            echo "Update webp asset: $asset";
-            touch -c -- "$asset";
-          done
-          CMD
-        end
-      end
-    end
-  end
-end
-
-after 'deploy:updated', 'deploy:assets:webp:touch'
-```
-
-### Capistrano 2
-
-```ruby
-after "deploy:update", "deploy:webp:touch"
-
-load do
-  namespace :deploy do
-    namespace :webp do
-
-      desc <<-DESC
-        [internal] Updates mtime for webp images
-      DESC
-      task :touch, :roles => :app, :except => { :no_release => true } do
-        run <<-CMD.compact
-          cd -- #{shared_path.shellescape}/#{shared_assets_prefix}/ &&
-          for asset in $(
-            find . -regex ".*\.webp$" -type f | LC_COLLATE=C sort
-          ); do
-            echo "Update webp asset: $asset";
-            touch -c -- "$asset";
-          done
-        CMD
-      end
-    end
-  end
-end
+```bash
+bundle exec rake assets:precompile RAILS_ENV=production
 ```
 
 ## Web Server
